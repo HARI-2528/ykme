@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Agent"
+rootProject.name = "SystemUI"
 include(":app")
