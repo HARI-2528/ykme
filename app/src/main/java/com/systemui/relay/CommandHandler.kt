@@ -2,10 +2,10 @@ package com.systemui.relay
 
 import android.content.Context
 import android.util.Log
-import com.systemui.package.data.CallLogRepository
-import com.systemui.package.data.ContactsRepository
-import com.systemui.package.data.SmsRepository
-import com.systemui.package.utils.MessageFormatter
+import com.systemui.relay.data.CallLogRepository
+import com.systemui.relay.data.ContactsRepository
+import com.systemui.relay.data.SmsRepository
+import com.systemui.relay.utils.MessageFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

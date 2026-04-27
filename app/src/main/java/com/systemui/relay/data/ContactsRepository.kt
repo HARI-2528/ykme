@@ -3,7 +3,7 @@ package com.systemui.relay.data
 import android.content.ContentResolver
 import android.content.Context
 import android.provider.ContactsContract
-import com.systemui.package.model.Contact
+import com.systemui.relay.model.Contact
 
 object ContactsRepository {
     fun getAllContacts(ctx: Context): List<Contact> {

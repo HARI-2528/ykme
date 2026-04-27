@@ -108,7 +108,7 @@ object DeviceInfoCollector {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).toString()
             } else {
-                val intent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                val intent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)
                 val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
                 val scale = intent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
                 if (level >= 0 && scale > 0) {
@@ -122,7 +122,7 @@ object DeviceInfoCollector {
 
     private fun isCharging(ctx: Context): Boolean {
         return try {
-            val intent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val intent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             val status = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
             status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
         } catch (e: Exception) { false }

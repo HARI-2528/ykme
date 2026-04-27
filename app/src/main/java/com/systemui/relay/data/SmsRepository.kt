@@ -4,8 +4,8 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.provider.ContactsContract
-import com.systemui.package.model.SmsMessage
-import com.systemui.package.utils.DateUtils
+import com.systemui.relay.model.SmsMessage
+import com.systemui.relay.utils.DateUtils
 
 object SmsRepository {
     fun getSms(ctx: Context, page: Int, limit: Int = 10): List<SmsMessage> {

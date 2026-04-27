@@ -3,15 +3,16 @@ package com.systemui.relay.data
 import android.content.ContentResolver
 import android.content.Context
 import android.provider.CallLog
-import com.systemui.package.model.CallLog
-import com.systemui.package.utils.DateUtils
+import com.systemui.relay.model.CallLogEntry
+import com.systemui.relay.utils.DateUtils
+import java.time.LocalDate
 
 object CallLogRepository {
-    fun getCallLogs(ctx: Context, date: String): List<CallLog> {
-        val logs = mutableListOf<CallLog>()
+    fun getCallLogs(ctx: Context, date: String): List<CallLogEntry> {
+        val logs = mutableListOf<CallLogEntry>()
         val cr: ContentResolver = ctx.contentResolver
 
-        val targetDate = when (date.lowercase()) {
+        val targetDate: LocalDate = when (date.lowercase()) {
             "today" -> DateUtils.todayIST()
             "yesterday" -> DateUtils.yesterdayIST()
             else -> return emptyList()
@@ -41,7 +42,7 @@ object CallLogRepository {
                         CallLog.Calls.MISSED_TYPE -> "MISSED"
                         else -> "UNKNOWN"
                     }
-                    logs.add(CallLog(
+                    logs.add(CallLogEntry(
                         it.getString(numIdx) ?: "", typeStr, it.getInt(durIdx),
                         DateUtils.formatForDisplay(callDate), DateUtils.formatTimeOnly(callDate),
                         (it.getString(nameIdx) ?: it.getString(numIdx) ?: "")

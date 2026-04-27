@@ -8,7 +8,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.systemui.package.utils.PermissionHelper
+import com.systemui.relay.utils.PermissionHelper
 
 class MainActivity : AppCompatActivity() {
     private lateinit var titleText: TextView

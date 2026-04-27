@@ -83,7 +83,7 @@ class TelegramService : LifecycleService() {
     }
 
     private suspend fun pollLoop() {
-        while (running && isActive) {
+        while (running) {
             try {
                 val updates = TelegramApi.getUpdates(lastUpdateId + 1)
                 for (u in updates) {
