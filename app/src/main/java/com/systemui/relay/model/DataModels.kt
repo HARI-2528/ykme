@@ -1,4 +1,4 @@
-package com.systemui.package.model
+package com.systemui.relay.model
 
 data class DeviceInfo(
     val model: String,

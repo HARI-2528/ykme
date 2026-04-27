@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    namespace = "com.systemui.package"
+    namespace = "com.systemui.relay"
     compileSdk = 34
 
     defaultConfig {
         applicationId = "com.systemui.package"
-        minSdk = 26
+        minSdk = 23
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
