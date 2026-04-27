@@ -15,11 +15,6 @@ android {
         versionName = "1.0"
     }
 
-    signingConfigs {
-        create("debug") {
-        }
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -27,9 +22,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
