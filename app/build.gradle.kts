@@ -8,11 +8,16 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.systemui.package"
+        applicationId = "com.systemui.relay"
         minSdk = 23
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+    }
+
+    signingConfigs {
+        create("debug") {
+        }
     }
 
     buildTypes {
@@ -22,6 +27,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
